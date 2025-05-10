@@ -17,3 +17,11 @@
 bin/
 obj/
 
+
+# Ignore build outputs globally
+**/bin/
+**/obj/
+**/obj/Debug/
+**/obj/Release/
+
+
