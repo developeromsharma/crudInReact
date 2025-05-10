@@ -2,18 +2,16 @@
 # This .gitignore file was automatically created by Microsoft(R) Visual Studio.
 ################################################################################
 
-/.vs/crudInReact/FileContentIndex/212b71f4-76f3-4726-9eb5-8ba64248dd9e.vsidx
-/.vs/crudInReact/v17/DocumentLayout.json
-/.vs/slnx.sqlite
-/.vs/VSWorkspaceState.json
-/.vs/crudInReact/FileContentIndex/a5b713c4-f021-4268-9adb-e749b22b578e.vsidx
-/.vs/crudInReact/v17/.wsuo
-/.vs/crudInReact/FileContentIndex/6849243e-5beb-4bc9-a47b-476303e1167f.vsidx
-/.vs/crudInReact/FileContentIndex/7567078d-a133-4254-adf8-965683ae7c9f.vsidx
-/.vs/crudInReact
-/crudInReact/.vs/crudInReact
+/.vs/
+/.vscode/
+/slnx.sqlite
+/VSWorkspaceState.json
 
 # Ignore build outputs
 bin/
 obj/
+
+# Ignore auto-generated code
+*.g.cs
+*.g.i.cs
 
