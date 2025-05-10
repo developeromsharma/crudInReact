@@ -1,0 +1,3 @@
+﻿<Project>
+  <Import Project="..\build\crudInReact.Server.props" />
+</Project>
