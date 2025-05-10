@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("crudInReact.Server")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ff26a34eef0ae8a76e5a8599da97cb8f9750c75d")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3bbfbd369f6b9e89e206a5c4c6ef4f8961624457")]
 [assembly: System.Reflection.AssemblyProductAttribute("crudInReact.Server")]
 [assembly: System.Reflection.AssemblyTitleAttribute("crudInReact.Server")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

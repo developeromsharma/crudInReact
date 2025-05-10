@@ -12,3 +12,8 @@
 /.vs/crudInReact/FileContentIndex/7567078d-a133-4254-adf8-965683ae7c9f.vsidx
 /.vs/crudInReact
 /crudInReact/.vs/crudInReact
+
+# Ignore build outputs
+bin/
+obj/
+
