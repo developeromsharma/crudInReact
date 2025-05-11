@@ -1,35 +1,59 @@
-// This file allows you to configure ESLint according to your project's needs, so that you
-// can control the strictness of the linter, the plugins to use, and more.
+// courseService.js
+import axios from 'axios';
 
-// For more information about configuring ESLint, visit https://eslint.org/docs/user-guide/configuring/
-
-const BASE_URL = '/api/courses';
+const axiosInstance = axios.create({
+    baseURL: 'https://localhost:7226/api/courses',
+    headers: {
+        'Content-Type': 'application/json',
+    }
+});
 
 export const getCourses = async () => {
-    const res = await fetch(BASE_URL);
-    return await res.json();
+    const response = await axiosInstance.get('/GetAll');
+    return response.data;
 };
 
 export const createCourse = async (course) => {
-    const res = await fetch(BASE_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(course)
-    });
-    return await res.json();
+    const response = await axiosInstance.post('', course);
+    return response.data;
 };
 
 export const updateCourse = async (id, course) => {
-    const res = await fetch(`${BASE_URL}/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(course)
-    });
-    return await res.json();
+    try {
+        // Log the URL and headers to ensure the request is correctly formed
+        console.log(`Sending PUT request to: https://localhost:7226/api/courses/${id}`);
+        console.log('Request Headers:', axiosInstance.defaults.headers);
+
+        console.log("Final course object sent:", course);
+
+        // Perform the PUT request
+        const response = await axiosInstance.put(`/${id}`, course);
+
+        // Log the response for debugging
+        console.log('Response from server:', response.data);
+
+        return response.data;
+    } catch (error) {
+        // Log detailed error object
+        console.error('Error during PUT request:', error);  // Log full error object for debugging
+
+        // Check if the error has a response property, which contains details from the backend
+        if (error.response) {
+            console.error('Error response data:', error.response.data);  // Backend error message
+            console.error('Error response status:', error.response.status);  // HTTP status code
+            console.error('Error response headers:', error.response.headers);  // Response headers
+        } else {
+            console.error('Error message:', error.message);  // If no response, log the message
+        }
+
+        // Re-throw the error so it can be handled further
+        throw error;
+    }
 };
 
+
+
 export const deleteCourse = async (id) => {
-    return await fetch(`${BASE_URL}/${id}`, {
-        method: 'DELETE'
-    });
+    const response = await axiosInstance.delete(`/${id}`);
+    return response.data;
 };

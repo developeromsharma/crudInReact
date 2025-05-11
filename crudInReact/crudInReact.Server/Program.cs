@@ -8,6 +8,17 @@ using Microsoft.OpenApi.Models;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowLocalhost", policy =>
+    {
+        policy.WithOrigins("https://localhost:50002") // Frontend URL
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
+// Add services to the container.
 builder.Services.AddDbContext<CourseDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -39,6 +50,9 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseRouting();
 app.UseAuthorization();
+// Configure the HTTP request pipeline.
+app.UseCors("AllowLocalhost");  // Enable CORS with the policy
+
 app.MapControllers();
 
 app.Run();

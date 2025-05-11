@@ -25,3 +25,6 @@ obj/
 **/obj/Release/
 
 
+**/node_modules/
+node_modules/
+
