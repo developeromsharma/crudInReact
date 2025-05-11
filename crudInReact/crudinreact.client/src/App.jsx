@@ -5,7 +5,7 @@ import './App.css';
 function App() {
     return (
         <div className="App">
-            <h1>Course Management</h1>
+            <h1>CRUD Operation in React</h1>
             <CourseCrud />
         </div>
     );
