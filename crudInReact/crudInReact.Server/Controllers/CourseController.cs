@@ -2,6 +2,7 @@
 using crudInReact.Server.DTO;
 using crudInReact.Server.Models;
 using crudInReact.Server.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,6 +10,7 @@ namespace crudInReact.Server.Controllers
 {
     [ApiController]
     [Route("api/courses")]
+    [Authorize]
     public class CourseController : ControllerBase
     {
         private readonly ICourseServices _courseService;

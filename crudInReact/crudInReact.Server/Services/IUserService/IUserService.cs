@@ -1,0 +1,9 @@
+﻿using crudInReact.Server.Models;
+
+namespace crudInReact.Server.Services
+{
+    public interface IUserService
+    {
+        Task<UserModel?> AuthenticateAsync(string username, string password);
+    }
+}
