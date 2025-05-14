@@ -2,35 +2,37 @@
 using crudInReact.Server.DTO;
 using crudInReact.Server.Models;
 using crudInReact.Server.Services;
-using Microsoft.AspNetCore.Cors.Infrastructure;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace crudInReact.Server.Controllers
 {
     [ApiController]
     [Route("api/courses")]
+    [Authorize]  // This ensures that only authenticated users can access this controller
     public class CourseController : ControllerBase
     {
         private readonly ICourseServices _courseService;
         private readonly IMapper _mapper;
-        public CourseController(ICourseServices courseservice, IMapper mapper)
+
+        public CourseController(ICourseServices courseService, IMapper mapper)
         {
-            _courseService = courseservice;
+            _courseService = courseService;
             _mapper = mapper;
         }
 
         [HttpGet("GetAll")]
         public ActionResult<IEnumerable<CourseModel>> GetAllCourse()
         {
-            //return Ok(_courseService.GetAllCourses());
-            var CoursesList = _courseService.GetAllCourses();
-            return Ok(CoursesList);
+            // Non-admins can access this route
+            var coursesList = _courseService.GetAllCourses();
+            return Ok(coursesList);
         }
 
         [HttpGet("{id}")]
+        [Authorize(Policy = "AdminOnly")]  // Only admins can access this
         public ActionResult GetSingleCourse(int id)
         {
-            //return Ok(_courseService.GetCourseById(id));
             var courseItem = _courseService.GetCourseById(id);
             if (courseItem != null)
             {
@@ -39,30 +41,15 @@ namespace crudInReact.Server.Controllers
             return NotFound();
         }
 
-        //KEPT THIS POST METHOD AS IT IS WORKING CODE
-        //COMMENTED THIS TO DEMONSTATE DTO
-
-        //[HttpPost]
-        //public ActionResult<CourseModel> AddCourse(CourseModel newCourse)
-        //{
-        //    if (newCourse == null)
-        //    {
-        //        return BadRequest("Course data is null.");
-        //    }
-
-        //    _courseService.AddCourse(newCourse);
-        //    _courseService.SaveChanges();
-
-        //    return CreatedAtAction(nameof(GetSingleCourse), new { id = newCourse.CourseId }, newCourse);
-        //}
-
         [HttpPost]
+        [Authorize(Policy = "AdminOnly")]  // Only admins can add courses
         public ActionResult<AddCourseDTO> AddCourse(AddCourseDTO addCourseDTO)
         {
             if (addCourseDTO == null)
             {
                 return BadRequest("Course data is null.");
             }
+
             var newCourse = _mapper.Map<CourseModel>(addCourseDTO);
             _courseService.AddCourse(newCourse);
             _courseService.SaveChanges();
@@ -70,6 +57,7 @@ namespace crudInReact.Server.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Policy = "AdminOnly")]  // Only admins can update courses
         public ActionResult UpdateCourse(int id, CourseModel updatedCourse)
         {
             if (updatedCourse == null || id != updatedCourse.CourseId)
@@ -94,11 +82,10 @@ namespace crudInReact.Server.Controllers
             return NoContent();
         }
 
-
         [HttpDelete("{id}")]
+        [Authorize(Policy = "AdminOnly")]  // Only admins can delete courses
         public IActionResult DeleteCourses(int id)
         {
-            //return Ok(_courseService.DeleteCourse(id));
             var courseDetails = _courseService.GetCourseById(id);
             if (courseDetails == null)
             {
@@ -108,6 +95,5 @@ namespace crudInReact.Server.Controllers
             _courseService.SaveChanges();
             return NoContent();
         }
-
     }
 }

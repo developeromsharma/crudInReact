@@ -11,6 +11,7 @@ namespace crudInReact.Server.DataServices
 
         }
         public DbSet<CourseModel> Courses { get; set; }
+        public DbSet<UserModel> Users { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -36,6 +37,23 @@ namespace crudInReact.Server.DataServices
                     CourseName = "SQL Server Basics",
                     CourseCode = "SQL301",
                     CourseRating = 4.2
+                }
+            );
+
+            modelBuilder.Entity<UserModel>().HasData(
+                new UserModel
+                {
+                    Id = 1,
+                    Username = "admin",
+                    Password = "admin",  
+                    IsAdmin = true
+                },
+                new UserModel
+                {
+                    Id = 2,
+                    Username = "user",
+                    Password = "user",
+                    IsAdmin = false
                 }
             );
         }
