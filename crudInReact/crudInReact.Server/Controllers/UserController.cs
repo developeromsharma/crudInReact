@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace crudInReact.Server.Controllers
 {
-   
     [ApiController]
     [Route("api/[controller]")]
     public class UserController : ControllerBase
@@ -22,12 +21,20 @@ namespace crudInReact.Server.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest loginDto)
         {
-            var user = await _userService.AuthenticateAsync(loginDto.Username, loginDto.Password);
-            if (user == null)
-                return Unauthorized("Invalid credentials");
+            if (loginDto == null)
+                return BadRequest("Login data is null.");
 
+            // Authenticate the user based on the provided credentials
+            var user = await _userService.AuthenticateAsync(loginDto.Username, loginDto.Password);
+
+            if (user == null)
+                return Unauthorized("Invalid username or password.");
+
+            // Generate JWT token after successful authentication
             var token = _jwtService.GenerateToken(user);
 
-            return Ok(new { token });
+            // Send back the token and the isAdmin claim
+            return Ok(new { Token = token, IsAdmin = user.IsAdmin });
         }
+    }
 }

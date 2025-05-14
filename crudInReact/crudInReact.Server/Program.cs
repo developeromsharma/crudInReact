@@ -30,7 +30,11 @@ builder.Services.AddAuthentication("Bearer")
             )
         };
     });
-
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly", policy =>
+        policy.RequireClaim("isAdmin", "True"));
+});
 
 // Add services to the container.
 builder.Services.AddCors(options =>
