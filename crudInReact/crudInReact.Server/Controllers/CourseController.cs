@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using crudInReact.Server.DTO;
+using crudInReact.Server.Helper;
 using crudInReact.Server.Models;
 using crudInReact.Server.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -7,10 +8,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace crudInReact.Server.Controllers
 {
-    [ApiController]
     [Route("api/courses")]
-    [Authorize]  // This ensures that only authenticated users can access this controller
-    public class CourseController : ControllerBase
+    [Authorize]
+    public class CourseController : BaseController
     {
         private readonly ICourseServices _courseService;
         private readonly IMapper _mapper;
@@ -22,78 +22,77 @@ namespace crudInReact.Server.Controllers
         }
 
         [HttpGet("GetAll")]
-        public ActionResult<IEnumerable<CourseModel>> GetAllCourse()
+        public ActionResult<ApiResponse<IEnumerable<CourseModel>>> GetAllCourse()
         {
-            // Non-admins can access this route
             var coursesList = _courseService.GetAllCourses();
-            return Ok(coursesList);
+            return SuccessResponse(coursesList, Constants.CoursesRetrieved);
         }
 
         [HttpGet("{id}")]
-        [Authorize(Policy = "AdminOnly")]  // Only admins can access this
-        public ActionResult GetSingleCourse(int id)
+        [Authorize(Policy = "AdminOnly")]
+        public ActionResult<ApiResponse<CourseModel>> GetSingleCourse(int id)
         {
             var courseItem = _courseService.GetCourseById(id);
-            if (courseItem != null)
-            {
-                return Ok(courseItem);
-            }
-            return NotFound();
+            if (courseItem == null)
+                return NotFoundResponse<CourseModel>(Constants.CourseNotFound);
+
+            return SuccessResponse(courseItem, Constants.CourseRetrieved);
         }
 
         [HttpPost]
-        [Authorize(Policy = "AdminOnly")]  // Only admins can add courses
-        public ActionResult<AddCourseDTO> AddCourse(AddCourseDTO addCourseDTO)
+        [Authorize(Policy = "AdminOnly")]
+        public ActionResult<ApiResponse<CourseModel>> AddCourse(AddCourseDTO addCourseDTO)
         {
             if (addCourseDTO == null)
-            {
-                return BadRequest("Course data is null.");
-            }
+                return ErrorResponse<CourseModel>(Constants.CourseDataIsNull);
 
             var newCourse = _mapper.Map<CourseModel>(addCourseDTO);
             _courseService.AddCourse(newCourse);
             _courseService.SaveChanges();
-            return Ok(newCourse);
+
+            return SuccessResponse(newCourse, Constants.CourseAdded);
         }
 
-        [HttpPut("{id}")]
-        [Authorize(Policy = "AdminOnly")]  // Only admins can update courses
-        public ActionResult UpdateCourse(int id, CourseModel updatedCourse)
+        [HttpPatch("{id}")]
+        [Authorize(Policy = "AdminOnly")]
+        public ActionResult<ApiResponse<object>> PatchCourse(int id, [FromBody] UpdateCourseDto updateDto)
         {
-            if (updatedCourse == null || id != updatedCourse.CourseId)
-            {
-                return BadRequest("Invalid course data.");
-            }
+            if (updateDto == null)
+                return ErrorMessage(Constants.InvalidCourseData);
 
             var existingCourse = _courseService.GetCourseById(id);
             if (existingCourse == null)
-            {
-                return NotFound();
-            }
+                return NotFoundResponse(Constants.CourseNotFound);
 
-            // Manually update fields
-            existingCourse.CourseName = updatedCourse.CourseName;
-            existingCourse.CourseCode = updatedCourse.CourseCode;
-            existingCourse.CourseRating = updatedCourse.CourseRating;
+            // Only update fields that are provided
+            if (updateDto.CourseName != null)
+                existingCourse.CourseName = updateDto.CourseName;
+
+            if (updateDto.CourseCode != null)
+                existingCourse.CourseCode = updateDto.CourseCode;
+
+            if (updateDto.CourseRating.HasValue)
+                existingCourse.CourseRating = updateDto.CourseRating.Value;
 
             _courseService.UpdateCourse(existingCourse);
             _courseService.SaveChanges();
 
-            return NoContent();
+            return SuccessMessage(Constants.CourseUpdated);
         }
 
+
         [HttpDelete("{id}")]
-        [Authorize(Policy = "AdminOnly")]  // Only admins can delete courses
-        public IActionResult DeleteCourses(int id)
+        [Authorize(Policy = "AdminOnly")]
+        public ActionResult<ApiResponse<object>> DeleteCourses(int id)
         {
             var courseDetails = _courseService.GetCourseById(id);
             if (courseDetails == null)
-            {
-                return NotFound();
-            }
+                return NotFoundResponse(Constants.CourseNotFound);
+
             _courseService.DeleteCourse(courseDetails);
             _courseService.SaveChanges();
-            return NoContent();
+
+            return SuccessMessage(Constants.CourseDeleted);
         }
     }
 }

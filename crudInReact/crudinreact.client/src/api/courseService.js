@@ -1,4 +1,4 @@
-// courseService.js
+// courseService.jsx
 import axios from 'axios';
 
 const axiosInstance = axios.create({
@@ -10,7 +10,7 @@ const axiosInstance = axios.create({
 
 axiosInstance.interceptors.request.use(
     (config) => {
-        const token = localStorage.getItem('token'); // or check the context if you're using Context instead
+        const token = localStorage.getItem('token'); // or from context
         if (token) {
             console.log('Adding Authorization header with token:', token); // Debug log
             config.headers.Authorization = `Bearer ${token}`;
@@ -20,31 +20,28 @@ axiosInstance.interceptors.request.use(
     (error) => Promise.reject(error)
 );
 
-
+// GET all courses
 export const getCourses = async () => {
-    const response = await axiosInstance.get('/GetAll');
-    return response.data;
+    return await axiosInstance.get('/GetAll'); // full Axios response
 };
 
+// CREATE a new course
 export const createCourse = async (course) => {
-    const response = await axiosInstance.post('', course);
-    return response.data;
+    return await axiosInstance.post('', course); // full Axios response
 };
 
-export const updateCourse = async (id, course) => {
+export const updateCourse = async (id, partialCourseData) => {
     try {
-        const response = await axiosInstance.put(`/${id}`, course);
-        return response.data;
+        const response = await axiosInstance.patch(`/${id}`, partialCourseData);
+        return response;
     } catch (error) {
-        console.error('Error during PUT request:', error);
-        if (error.response) {
-            console.error('Backend error:', error.response.data);
-        }
+        console.error('Error during PATCH request:', error);
         throw error;
     }
 };
 
+
+// DELETE a course
 export const deleteCourse = async (id) => {
-    const response = await axiosInstance.delete(`/${id}`);
-    return response.data;
+    return await axiosInstance.delete(`/${id}`); // full Axios response
 };
