@@ -10,6 +10,11 @@ namespace crudInReact.Server.DTO
                 //Source -> Target
                 CreateMap<AddCourseDTO, CourseModel>();
                 CreateMap<CourseModel, AddCourseDTO>();
-            }
+                
+                CreateMap<UpdateCourseDto, CourseModel>()
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+
+
+        }
     }
 }

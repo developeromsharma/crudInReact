@@ -3,17 +3,22 @@ import { getCourses, createCourse, updateCourse, deleteCourse } from '../api/cou
 import { AuthContext } from '../context/AuthContext';
 
 const CourseCrud = () => {
-    const { token, isAdmin, logout } = useContext(AuthContext);
+    const { token, isAdmin } = useContext(AuthContext);
     const [courses, setCourses] = useState([]);
     const [form, setForm] = useState({ courseName: '', courseCode: '', courseRating: '' });
     const [editId, setEditId] = useState(null);
+    const [originalCourse, setOriginalCourse] = useState(null); // for diffing
 
     const loadCourses = async () => {
         try {
-            const data = await getCourses();
-            setCourses(data);
+            const response = await getCourses();
+            if (response.data && response.data.data) {
+                setCourses(response.data.data);
+            } else {
+                console.error("Unexpected response:", response);
+            }
         } catch (err) {
-            console.error("Error loading courses:", err.response?.data || err.message);
+            console.error("Error loading courses:", err.response?.data?.message || err.message);
         }
     };
 
@@ -25,6 +30,16 @@ const CourseCrud = () => {
         setForm({ ...form, [e.target.name]: e.target.value });
     };
 
+    const getChangedFields = () => {
+        const changed = {};
+        if (form.courseName !== originalCourse?.courseName) changed.courseName = form.courseName;
+        if (form.courseCode !== originalCourse?.courseCode) changed.courseCode = form.courseCode;
+        if (parseFloat(form.courseRating) !== originalCourse?.courseRating) {
+            changed.courseRating = parseFloat(form.courseRating);
+        }
+        return changed;
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -33,25 +48,32 @@ const CourseCrud = () => {
             return;
         }
 
-        const course = {
-            ...form,
-            courseRating: parseFloat(form.courseRating),
-            courseId: editId
-        };
-
         try {
+            let response;
             if (editId) {
-                await updateCourse(editId, course);
-                alert('Course updated successfully!');
+                const changedFields = getChangedFields();
+                if (Object.keys(changedFields).length === 0) {
+                    alert('No changes detected.');
+                    return;
+                }
+
+                response = await updateCourse(editId, changedFields);
+                alert(response.data.message || 'Course updated successfully!');
                 setEditId(null);
+                setOriginalCourse(null);
             } else {
-                await createCourse(course);
-                alert('Course created successfully!');
+                const newCourse = {
+                    ...form,
+                    courseRating: parseFloat(form.courseRating),
+                };
+                response = await createCourse(newCourse);
+                alert(response.data.message || 'Course created successfully!');
             }
+
             setForm({ courseName: '', courseCode: '', courseRating: '' });
             loadCourses();
         } catch (error) {
-            alert('Error saving course. Check console for details.');
+            alert(error.response?.data?.message || 'Error saving course. Check console for details.');
             console.error(error);
         }
     };
@@ -60,19 +82,20 @@ const CourseCrud = () => {
         setForm({
             courseName: course.courseName,
             courseCode: course.courseCode,
-            courseRating: course.courseRating
+            courseRating: course.courseRating,
         });
         setEditId(course.courseId);
+        setOriginalCourse(course);
     };
 
     const handleDelete = async (id) => {
         if (window.confirm('Are you sure you want to delete this course?')) {
             try {
-                await deleteCourse(id);
+                const response = await deleteCourse(id);
+                alert(response.data.message || 'Course deleted successfully!');
                 loadCourses();
-                alert('Course deleted successfully!');
             } catch (err) {
-                alert('Failed to delete course.');
+                alert(err.response?.data?.message || 'Failed to delete course.');
                 console.error(err);
             }
         }
@@ -82,8 +105,11 @@ const CourseCrud = () => {
 
     return (
         <div className="container mt-5">
-             {isAdmin && (
-                <form onSubmit={handleSubmit} className="d-flex flex-wrap align-items-center justify-content-center gap-2 mb-4">
+            {isAdmin && (
+                <form
+                    onSubmit={handleSubmit}
+                    className="d-flex flex-wrap align-items-center justify-content-center gap-2 mb-4"
+                >
                     <input
                         name="courseName"
                         value={form.courseName}
@@ -117,7 +143,6 @@ const CourseCrud = () => {
                         {editId ? 'Update' : 'Add'} Course
                     </button>
                 </form>
-
             )}
 
             <div className="table-responsive">
