@@ -148,3 +148,12 @@ Storing Token: The token is stored in localStorage in the frontend.
 Making Requests: The token is included in the Authorization header for API requests that require authentication.
 
 Role-based Routing: Protected routes are accessible only to users with the isAdmin flag set to true.
+
+
+
+Summary for Your LMS Case
+Concept	Your LMS Example
+Role-Based Access Control	Admin vs User roles
+Data Partitioning	Admins see their own courses; users see enrolled
+Claims-Based Authorization	JWT token carries isAdmin and userId claims
+Attribute-Based Access Control	Admin can only modify courses they created (ownership)
