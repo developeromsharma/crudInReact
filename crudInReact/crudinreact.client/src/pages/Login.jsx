@@ -6,13 +6,13 @@ import axios from 'axios';
 const Login = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
-    const [isLoading, setIsLoading] = useState(false); // <-- Loading state
+    const [isLoading, setIsLoading] = useState(false);
     const { login } = useContext(AuthContext);
     const navigate = useNavigate();
 
     const handleLogin = async (e) => {
         e.preventDefault();
-        setIsLoading(true);  // Start loading
+        setIsLoading(true);
 
         try {
             const response = await axios.post('https://localhost:7226/api/User/login', {
@@ -22,24 +22,26 @@ const Login = () => {
 
             const { token, isAdmin } = response.data;
             login(token, isAdmin);
-            navigate('/courses');
+            navigate(isAdmin ? '/admin' : '/dashboard');
         } catch (err) {
-            console.error(err);
             alert('Login failed');
         } finally {
-            setIsLoading(false); // Stop loading when done (success or error)
+            setIsLoading(false);
         }
     };
 
     return (
-        <form onSubmit={handleLogin}>
+        <form onSubmit={handleLogin} className="d-flex flex-column align-items-center gap-3 mt-5">
+            <h2>Login</h2>
             <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Username"
                 required
-                disabled={isLoading} // Disable inputs during loading
+                disabled={isLoading}
+                className="form-control"
+                style={{ maxWidth: '300px' }}
             />
             <input
                 type="password"
@@ -48,16 +50,16 @@ const Login = () => {
                 placeholder="Password"
                 required
                 disabled={isLoading}
+                className="form-control"
+                style={{ maxWidth: '300px' }}
             />
-            <button type="submit" disabled={isLoading}>
+            <button type="submit" disabled={isLoading} className="btn btn-primary">
                 {isLoading ? 'Logging in...' : 'Login'}
             </button>
 
-            {/* Show a simple progress bar or spinner */}
             {isLoading && (
                 <div style={{ marginTop: '10px' }}>
                     <progress />
-                    {/* Or use a spinner component or CSS animation */}
                 </div>
             )}
         </form>
