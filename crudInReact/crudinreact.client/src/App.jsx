@@ -26,11 +26,7 @@ function AppContent() {
                         <CourseCrud />
                     </ProtectedRoute>
                 } />
-                <Route path="/admin" element={
-                    <ProtectedRoute adminOnly={true}>
-                        <CourseCrud />
-                    </ProtectedRoute>
-                } />
+               
             </Routes>
         </>
     );
