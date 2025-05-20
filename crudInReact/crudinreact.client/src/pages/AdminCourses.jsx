@@ -1,6 +1,10 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { getCourses, createCourse, updateCourse, deleteCourse } from '../api/courseService';
+import {
+    getCourses, createCourse, updateCourse, deleteCourse,
+    assignCourseToUser, unassignCourseFromUser, getUserCourseAssignments
+} from '../api/courseService';
 import { AuthContext } from '../context/AuthContext';
+import axios from 'axios';
 
 const AdminCourses = () => {
     const { token } = useContext(AuthContext);
@@ -9,6 +13,13 @@ const AdminCourses = () => {
     const [editId, setEditId] = useState(null);
     const [originalCourse, setOriginalCourse] = useState(null);
 
+    // New states for assignment UI
+    const [users, setUsers] = useState([]);
+    const [selectedUserId, setSelectedUserId] = useState('');
+    const [selectedCourseId, setSelectedCourseId] = useState('');
+    const [userCourseMap, setUserCourseMap] = useState([]);
+
+    // Load all courses
     const loadCourses = async () => {
         try {
             const response = await getCourses();
@@ -18,10 +29,37 @@ const AdminCourses = () => {
         }
     };
 
+    // Load users (from separate API - axios used here)
+    const loadUsers = async () => {
+        try {
+            const res = await axios.get('https://localhost:7226/api/users', {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            setUsers(res.data);
+        } catch (err) {
+            console.error('Error loading users:', err);
+        }
+    };
+
+    // Load assigned courses per user
+    const loadUserCourseMap = async () => {
+        try {
+            const res = await getUserCourseAssignments();
+            setUserCourseMap(res.data.data);
+        } catch (err) {
+            console.error('Error loading assigned courses:', err);
+        }
+    };
+
     useEffect(() => {
-        if (token) loadCourses();
+        if (token) {
+            loadCourses();
+            loadUsers();
+            loadUserCourseMap();
+        }
     }, [token]);
 
+    // CRUD handlers (unchanged)
     const handleChange = (e) => {
         setForm({ ...form, [e.target.name]: e.target.value });
     };
@@ -74,10 +112,41 @@ const AdminCourses = () => {
         }
     };
 
+    // Assign course to user
+    const handleAssign = async () => {
+        if (!selectedUserId || !selectedCourseId) {
+            return alert('Please select both user and course.');
+        }
+        try {
+            await assignCourseToUser(selectedUserId, parseInt(selectedCourseId));
+            alert('Course assigned successfully!');
+            setSelectedUserId('');
+            setSelectedCourseId('');
+            loadUserCourseMap();
+        } catch (error) {
+            console.error('Error assigning course:', error);
+            alert('Failed to assign course.');
+        }
+    };
+
+    // Unassign course from user
+    const handleUnassign = async (userId, courseId) => {
+        if (!window.confirm('Are you sure you want to unassign this course?')) return;
+        try {
+            await unassignCourseFromUser(userId, courseId);
+            alert('Course unassigned successfully!');
+            loadUserCourseMap();
+        } catch (error) {
+            console.error('Error unassigning course:', error);
+            alert('Failed to unassign course.');
+        }
+    };
+
     if (!token) return <div>Please login.</div>;
 
     return (
         <div className="container mt-5">
+            {/* --- Original CRUD form and table --- */}
             <form onSubmit={handleSubmit} className="d-flex gap-2 mb-4">
                 <input name="courseName" value={form.courseName} onChange={handleChange} placeholder="Name" className="form-control" required />
                 <input name="courseCode" value={form.courseCode} onChange={handleChange} placeholder="Code" className="form-control" required />
@@ -105,6 +174,66 @@ const AdminCourses = () => {
                     ))}
                 </tbody>
             </table>
+
+            {/* --- New: Assign course to user UI --- */}
+            <h3>Assign Course to User</h3>
+            <div className="row g-2 mb-4">
+                <div className="col-md-4">
+                    <select className="form-select" value={selectedUserId} onChange={(e) => setSelectedUserId(e.target.value)}>
+                        <option value="">Select User</option>
+                        {users.map(user => (
+                            <option key={user.id} value={user.id}>{user.userName}</option>
+                        ))}
+                    </select>
+                </div>
+                <div className="col-md-4">
+                    <select className="form-select" value={selectedCourseId} onChange={(e) => setSelectedCourseId(e.target.value)}>
+                        <option value="">Select Course</option>
+                        {courses.map(course => (
+                            <option key={course.courseId} value={course.courseId}>{course.courseName}</option>
+                        ))}
+                    </select>
+                </div>
+                <div className="col-md-4">
+                    <button className="btn btn-success w-100" onClick={handleAssign}>Assign</button>
+                </div>
+            </div>
+
+            {/* --- New: Assigned courses display and unassign button --- */}
+            <h4>Assigned Courses</h4>
+            {userCourseMap.length === 0 ? (
+                <p>No assigned courses yet.</p>
+            ) : (
+                userCourseMap.map(user => (
+                    <div key={user.userId} className="mb-3">
+                        <h5>{user.userName}</h5>
+                        {user.assignedCourses.length === 0 ? (
+                            <p><em>No courses assigned.</em></p>
+                        ) : (
+                            <table className="table table-bordered">
+                                <thead>
+                                    <tr><th>Course</th><th>Action</th></tr>
+                                </thead>
+                                <tbody>
+                                    {user.assignedCourses.map(course => (
+                                        <tr key={course.courseId}>
+                                            <td>{course.courseName}</td>
+                                            <td>
+                                                <button
+                                                    className="btn btn-sm btn-outline-danger"
+                                                    onClick={() => handleUnassign(user.userId, course.courseId)}
+                                                >
+                                                    Unassign
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        )}
+                    </div>
+                ))
+            )}
         </div>
     );
 };
