@@ -1,5 +1,6 @@
 ﻿using crudInReact.Server.DataServices;
 using crudInReact.Server.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace crudInReact.Server.Services
 {
@@ -92,12 +93,21 @@ namespace crudInReact.Server.Services
             var courseIds = _courseContext.UserCoursesModel
                 .Where(uc => uc.UserId == userId)
                 .Select(uc => uc.CourseId)
-                .ToList();
+            .ToList();
 
             return _courseContext.Courses
                 .Where(course => courseIds.Contains(course.CourseId))
                 .ToList();
         }
+
+        public IEnumerable<CourseModel> GetCoursesForUser(string userName)
+        {
+            var user = _courseContext.Users.FirstOrDefault(u => u.Username == userName);
+            if (user == null) return new List<CourseModel>();
+
+            return GetCoursesForUser(user.Id);
+        }
+
 
         public void UnassignCourseFromUser(int userId, int courseId)
         {

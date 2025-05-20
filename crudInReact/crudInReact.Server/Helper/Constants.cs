@@ -1,4 +1,7 @@
-﻿namespace crudInReact.Server.Helper
+﻿using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using NuGet.Configuration;
+
+namespace crudInReact.Server.Helper
 {
     public class Constants
     {
@@ -16,5 +19,7 @@
         public const string UserNotFound = "User not found.";
         public const string UserIdNotFound = "User ID not found in token.";
         public const string CoursesRetrievedForCurrentUser = "Courses retrieved for current user.";
+        public const string UserCoursesRetrieved = "User courses retrieved successfully.";
+        public const string YouAreNotAuthorizedToViewOtherUsersCourses = "You are not authorized to view other users' courses.";
     }
 }

@@ -45,19 +45,3 @@ export const updateCourse = async (id, partialCourseData) => {
 export const deleteCourse = async (id) => {
     return await axiosInstance.delete(`/${id}`); // full Axios response
 };
-
-// ===== New: Assign course to user =====
-export const assignCourseToUser = async (userId, courseId) => {
-    return await axiosInstance.post('/assign', { userId, courseId });
-};
-
-// ===== New: Unassign course from user =====
-export const unassignCourseFromUser = async (userId, courseId) => {
-    // Assuming the backend expects userId and courseId as query params
-    return await axiosInstance.delete(`/unassign?userId=${userId}&courseId=${courseId}`);
-};
-
-// ===== New: Get assigned courses per user =====
-export const getUserCourseAssignments = async () => {
-    return await axiosInstance.get('/assign');
-};

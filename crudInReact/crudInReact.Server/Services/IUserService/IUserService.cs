@@ -1,4 +1,5 @@
-﻿using crudInReact.Server.Models;
+﻿using crudInReact.Server.DTO;
+using crudInReact.Server.Models;
 
 namespace crudInReact.Server.Services
 {
@@ -6,5 +7,7 @@ namespace crudInReact.Server.Services
     {
         Task<UserModel?> AuthenticateAsync(string username, string password);
         UserModel? GetUserById(int id);
+
+        Task<List<NonAdminUserDto>> GetNonAdminUsersAsync();
     }
 }
