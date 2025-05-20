@@ -18,5 +18,10 @@ namespace crudInReact.Server.Services
             return await _context.Users.FirstOrDefaultAsync(u =>
                 u.Username == username && u.Password == password); // Ideally, hash the password
         }
+
+        public UserModel? GetUserById(int id)
+        {
+            return _context.Users.FirstOrDefault(u => u.Id == id);
+        }
     }
 }

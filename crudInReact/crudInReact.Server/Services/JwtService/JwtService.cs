@@ -19,8 +19,9 @@ namespace crudInReact.Server.Services.JwtService
         {
             var claims = new[]
             {
-                new Claim(ClaimTypes.Name, user.Username),
-                new Claim("isAdmin", user.IsAdmin.ToString())
+                 new Claim("userId", user.Id.ToString()), 
+                 new Claim(ClaimTypes.Name, user.Username),
+                 new Claim("isAdmin", user.IsAdmin.ToString())
             };
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));

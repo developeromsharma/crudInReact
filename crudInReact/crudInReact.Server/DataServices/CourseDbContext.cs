@@ -17,17 +17,22 @@ namespace crudInReact.Server.DataServices
         {
             base.OnModelCreating(modelBuilder);
 
-            // Configure composite key
-            modelBuilder.Entity<UserCourseModel>()
-                .HasKey(uc => new { uc.UserId, uc.CourseId });
+            // Composite primary key (optional, or use Id field as PK)
+            // modelBuilder.Entity<UserCourseModel>()
+            //     .HasKey(uc => new { uc.UserId, uc.CourseId });
 
-            // Configure User -> UserCourses
+            // Unique constraint to prevent duplicate assignments
+            modelBuilder.Entity<UserCourseModel>()
+                .HasIndex(uc => new { uc.UserId, uc.CourseId })
+                .IsUnique();
+
+            // Configure relationships
+
             modelBuilder.Entity<UserCourseModel>()
                 .HasOne(uc => uc.UserModel)
                 .WithMany(u => u.UserCoursesModel)
                 .HasForeignKey(uc => uc.UserId);
 
-            // Configure Course -> UserCourses
             modelBuilder.Entity<UserCourseModel>()
                 .HasOne(uc => uc.CourseModel)
                 .WithMany(c => c.UserCoursesModel)

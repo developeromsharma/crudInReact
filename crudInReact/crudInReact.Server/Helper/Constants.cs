@@ -10,5 +10,11 @@
         public const string CourseDeleted = "Course deleted successfully.";
         public const string CourseUpdated = "Course updated successfully.";
         public const string CourseDataIsNull = "Course data is null.";
+        public const string InvalidAssignmentData = "Invalid assignment data.";
+        public const string CourseAssignedToUserSuccessfully = "Course assigned to user successfully.";
+        public const string CourseUnassignedFromUserSuccessfully = "Course unassigned from user successfully.";
+        public const string UserNotFound = "User not found.";
+        public const string UserIdNotFound = "User ID not found in token.";
+        public const string CoursesRetrievedForCurrentUser = "Courses retrieved for current user.";
     }
 }

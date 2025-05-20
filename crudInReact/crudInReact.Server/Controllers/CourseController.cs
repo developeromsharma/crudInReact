@@ -14,11 +14,13 @@ namespace crudInReact.Server.Controllers
     {
         private readonly ICourseServices _courseService;
         private readonly IMapper _mapper;
+        private readonly IUserService _userService;
 
-        public CourseController(ICourseServices courseService, IMapper mapper)
+        public CourseController(ICourseServices courseService, IMapper mapper, IUserService userService)
         {
             _courseService = courseService;
             _mapper = mapper;
+            _userService = userService;
         }
 
         [HttpGet("GetAll")]
@@ -93,6 +95,55 @@ namespace crudInReact.Server.Controllers
             _courseService.SaveChanges();
 
             return SuccessMessage(Constants.CourseDeleted);
+        }
+
+        [HttpPost("assign")]
+        [Authorize(Policy = "AdminOnly")]
+        public ActionResult<ApiResponse<object>> AssignCourseToUser([FromBody] AssignCourseDto dto)
+        {
+            if (dto == null || dto.UserId <= 0 || dto.CourseId <= 0)
+                return ErrorMessage(Constants.InvalidAssignmentData);
+
+            try
+            {
+                _courseService.AssignCourseToUser(dto.UserId, dto.CourseId);
+                _courseService.SaveChanges();
+                return SuccessMessage(Constants.CourseAssignedToUserSuccessfully);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return ErrorMessage(ex.Message);
+            }
+        }
+
+        [HttpGet("my-courses")]
+        public ActionResult<ApiResponse<IEnumerable<CourseModel>>> GetCoursesForCurrentUser()
+        {
+            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "userId");
+            if (userIdClaim == null)
+                return ErrorResponse<IEnumerable<CourseModel>>(Constants.UserIdNotFound);
+
+            int userId = int.Parse(userIdClaim.Value);
+
+            var courses = _courseService.GetCoursesForUser(userId);
+
+            return SuccessResponse(courses, Constants.CoursesRetrievedForCurrentUser);
+        }
+
+        [HttpDelete("unassign")]
+        [Authorize(Policy = "AdminOnly")]
+        public ActionResult<ApiResponse<object>> UnassignCourseFromUser([FromQuery] int userId, [FromQuery] int courseId)
+        {
+            var user = _userService.GetUserById(userId);
+            var course = _courseService.GetCourseById(courseId);
+
+            if (user == null || course == null)
+                return NotFoundResponse(Constants.UserNotFound);
+
+            _courseService.UnassignCourseFromUser(userId, courseId);
+            _courseService.SaveChanges();
+
+            return SuccessMessage(Constants.CourseUnassignedFromUserSuccessfully);
         }
     }
 }
