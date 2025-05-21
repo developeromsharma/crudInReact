@@ -23,8 +23,7 @@ namespace crudInReact.Server.DataServices
 
             // Unique constraint to prevent duplicate assignments
             modelBuilder.Entity<UserCourseModel>()
-                .HasIndex(uc => new { uc.UserId, uc.CourseId })
-                .IsUnique();
+                 .HasKey(uc => new { uc.UserId, uc.CourseId });
 
             // Configure relationships
 
