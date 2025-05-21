@@ -1,159 +1,196 @@
-# crudInReact
-CRUD Operation In React with .Net as backend, SQL Server as Database and React as Frontend
-
+crudInReact
+CRUD Operation In React with .NET 8 backend, SQL Server as Database, and React as Frontend
 
 React and .NET 8 CRUD Application with JWT Authentication
-This project is a full-stack web application consisting of a .NET 8 Web API backend and a React frontend. The backend handles CRUD operations for courses and uses JWT (JSON Web Token) authentication with role-based routing for user access. The frontend communicates with the API to display course data and provides login functionality with JWT.
+This project is a full-stack web application consisting of a .NET 8 Web API backend and a React frontend. It handles:
 
-Features
-Backend (API):
+CRUD operations for courses
 
-Built with .NET 8
+Secure login and authentication using JWT
+
+Role-based access control using an isAdmin flag
+
+Admins can assign courses to users
+
+Users can view only their assigned courses
+
+ Features
+ Backend (API - .NET 8)
+Built with .NET 8 Web API
 
 CRUD operations for courses
 
 Custom JWT authentication
 
-Role-based routing using isAdmin flag for admin access
+Role-based access using isAdmin
 
-Frontend (React):
+Admin can assign specific courses to users
 
-Login page with JWT authentication
+GET /api/course/my-courses endpoint for user-specific course data
 
-Role-based route protection based on the isAdmin flag
+ Frontend (React)
+JWT-based login system
 
-Fetching and displaying course data from the backend
+Authentication state managed with React Context
 
-Handling authentication state with React context
+Role-based routing: Admin vs User dashboards
 
-Prerequisites
+Users see only assigned courses, Admins see all courses
+
+React Bootstrap UI
+
+Unit testing with Vitest + React Testing Library
+
+ Prerequisites
 .NET 8 SDK
 
-Node.js (for React)
+Node.js
 
-npm (for managing React dependencies)
+npm or yarn
 
-Setup Instructions
-Backend Setup (.NET 8 Web API)
-Clone the backend repository:
+ Setup Instructions
+ Backend Setup (.NET 8 Web API)
+Clone the backend repository
 
 bash
 Copy
 Edit
-git clone <repository-url>
-cd <backend-directory>
-Install dependencies and build the project:
+git clone <backend-repo-url>
+cd <backend-folder>
+Restore and build
 
 bash
 Copy
 Edit
 dotnet restore
 dotnet build
-Set up the database connection string in the appsettings.json file.
+Configure database in appsettings.json
 
-Run the backend:
+Run the API
 
 bash
 Copy
 Edit
 dotnet run
-The backend API will be available at http://localhost:5000.
+Backend will run at: https://localhost:7226 (or based on HTTPS port)
 
 Frontend Setup (React)
-Clone the frontend repository:
+Clone the frontend repository
 
 bash
 Copy
 Edit
-git clone <repository-url>
-cd <frontend-directory>
-Install dependencies:
+git clone <frontend-repo-url>
+cd <frontend-folder>
+Install dependencies
 
 bash
 Copy
 Edit
 npm install
-Set the API URL in the .env file:
+Run the frontend
 
 bash
 Copy
 Edit
-REACT_APP_API_URL=http://localhost:5000
-Run the frontend:
+npm run dev
+Frontend will run at: https://localhost:50002 or configured Vite dev port
 
-bash
-Copy
-Edit
-npm start
-The frontend will be available at http://localhost:3000.
-
-Folder Structure
-Backend (.NET 8)
+ Folder Structure
+ Backend (ASP.NET Core)
 markdown
 Copy
 Edit
 - Controllers/
   - CourseController.cs
   - AuthController.cs
+  - AssignmentController.cs
 - Services/
   - CourseService.cs
   - AuthService.cs
+  - AssignmentService.cs
 - Repositories/
-  - ICourseRepository.cs
-  - CourseRepository.cs
+  - Interfaces/
+    - ICourseRepository.cs
+    - IUserRepository.cs
+    - IAssignmentRepository.cs
+  - Implementations/
+    - CourseRepository.cs
+    - UserRepository.cs
+    - AssignmentRepository.cs
 - Models/
   - Course.cs
   - User.cs
+  - Assignment.cs
 - JWT/
   - JwtHelper.cs
-- Startup.cs
 - appsettings.json
-Frontend (React)
+- Program.cs
+
+ Frontend (React + Vite)
 markdown
 Copy
 Edit
 - src/
   - components/
     - Login.js
-    - CourseList.js
+    - AdminDashboard.js
+    - UserDashboard.js
+    - AssignCourse.js
   - context/
     - AuthContext.js
-  - services/
-    - api.js
-  - App.js
-  - index.js
+  - api/
+    - authService.js
+    - courseService.js
+    - assignmentService.js
+  - tests/
+    - Login.test.jsx
+    - UserDashboard.test.jsx
+  - App.jsx
+  - main.jsx
+- vite.config.js
 - .env
 
-JWT Authentication
-Login: Users can log in via the /api/auth/login endpoint, which returns a JWT token upon successful authentication.
+JWT Authentication & Role-based Access
+Auth Flow
+Login: POST /api/auth/login returns JWT
 
-Authorization: The isAdmin flag is used for role-based routing. Admin users can access protected routes.
+Store Token: Saved to localStorage
 
-Sample API Endpoints
-POST /api/auth/login: Logs in a user and returns a JWT token.
+Authenticated Requests: Token passed in Authorization header
 
-GET /api/courses: Retrieves all courses (requires JWT).
+Routing:
 
-POST /api/courses: Adds a new course (requires JWT with admin privileges).
+Admins: Full access
 
-PUT /api/courses/{id}: Updates an existing course (requires JWT with admin privileges).
+Users: Can only see assigned courses
 
-DELETE /api/courses/{id}: Deletes a course (requires JWT with admin privileges).
+ Key API Endpoints
+Method	Endpoint	Description	Access
+POST	/api/auth/login	Logs in and returns JWT	Public
+GET	/api/course	Get all courses	Authenticated
+POST	/api/course	Create a course	Admin only
+PUT	/api/course/{id}	Update course	Admin only
+DELETE	/api/course/{id}	Delete course	Admin only
+GET	/api/course/my-courses	Get assigned courses for current user	Authenticated
+POST	/api/course/assign	Assign a course to a user	Admin only
 
-Authentication Flow
-Login: When a user logs in, a JWT token is generated and sent to the frontend.
+ Unit Testing
+Tools
+Vitest
 
-Storing Token: The token is stored in localStorage in the frontend.
+React Testing Library
 
-Making Requests: The token is included in the Authorization header for API requests that require authentication.
+Run Tests
+bash
+Copy
+Edit
+npm run test
 
-Role-based Routing: Protected routes are accessible only to users with the isAdmin flag set to true.
-
-
-
-Summary for Your LMS Case
+ Summary for LMS Use Case
 Concept	Your LMS Example
 Role-Based Access Control	Admin vs User roles
-Data Partitioning	Admins see their own courses; users see enrolled
-Claims-Based Authorization	JWT token carries isAdmin and userId claims
-Attribute-Based Access Control	Admin can only modify courses they created (ownership)
+Data Partitioning	Users only see assigned courses
+Claims-Based Authorization	JWT token holds isAdmin and userId
+Attribute-Based Access Control	Admin can only modify content they own
+
