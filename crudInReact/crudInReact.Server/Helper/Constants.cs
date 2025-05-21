@@ -1,7 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using NuGet.Configuration;
-
-namespace crudInReact.Server.Helper
+﻿namespace crudInReact.Server.Helper
 {
     public class Constants
     {

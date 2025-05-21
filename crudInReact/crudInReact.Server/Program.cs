@@ -1,8 +1,8 @@
 using AutoMapper;
 using crudInReact.Server.DataServices;
 using crudInReact.Server.DTO;
-using crudInReact.Server.Services;
-using crudInReact.Server.Services.JwtService;
+using crudInReact.Server.Services.IService;
+using crudInReact.Server.Services.Service;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -51,6 +51,7 @@ builder.Services.AddDbContext<CourseDbContext>(options =>
 
 builder.Services.AddScoped<ICourseServices, CourseServices>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IAssignmentService, AssignmentService>();
 builder.Services.AddScoped<JwtService>();
 
 // Register AutoMapper

@@ -1,7 +1,7 @@
 ﻿using crudInReact.Server.DTO;
 using crudInReact.Server.Models;
 
-namespace crudInReact.Server.Services
+namespace crudInReact.Server.Services.IService
 {
     public interface IUserService
     {

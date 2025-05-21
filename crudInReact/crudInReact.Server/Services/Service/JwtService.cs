@@ -4,7 +4,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
-namespace crudInReact.Server.Services.JwtService
+namespace crudInReact.Server.Services.Service
 {
     public class JwtService
     {
