@@ -26,19 +26,18 @@ namespace crudInReact.Server.Controllers
         [HttpGet("GetAll")]
         public ActionResult<ApiResponse<IEnumerable<CourseModel>>> GetAllCourse()
         {
-            var coursesList = _courseService.GetAllCourses();
-            return SuccessResponse(coursesList, Constants.CoursesRetrieved);
+            var courses = _courseService.GetAllCourses();
+            return SuccessResponse(courses, Constants.CoursesRetrieved);
         }
 
         [HttpGet("{id}")]
         [Authorize(Policy = "AdminOnly")]
         public ActionResult<ApiResponse<CourseModel>> GetSingleCourse(int id)
         {
-            var courseItem = _courseService.GetCourseById(id);
-            if (courseItem == null)
-                return NotFoundResponse<CourseModel>(Constants.CourseNotFound);
-
-            return SuccessResponse(courseItem, Constants.CourseRetrieved);
+            var course = _courseService.GetCourseById(id);
+            return course == null
+                ? NotFoundResponse<CourseModel>(Constants.CourseNotFound)
+                : SuccessResponse(course, Constants.CourseRetrieved);
         }
 
         [HttpPost]
@@ -48,11 +47,11 @@ namespace crudInReact.Server.Controllers
             if (addCourseDTO == null)
                 return ErrorResponse<CourseModel>(Constants.CourseDataIsNull);
 
-            var newCourse = _mapper.Map<CourseModel>(addCourseDTO);
-            _courseService.AddCourse(newCourse);
+            var course = _mapper.Map<CourseModel>(addCourseDTO);
+            _courseService.AddCourse(course);
             _courseService.SaveChanges();
 
-            return SuccessResponse(newCourse, Constants.CourseAdded);
+            return SuccessResponse(course, Constants.CourseAdded);
         }
 
         [HttpPatch("{id}")]
@@ -62,36 +61,29 @@ namespace crudInReact.Server.Controllers
             if (updateDto == null)
                 return ErrorMessage(Constants.InvalidCourseData);
 
-            var existingCourse = _courseService.GetCourseById(id);
-            if (existingCourse == null)
+            var course = _courseService.GetCourseById(id);
+            if (course == null)
                 return NotFoundResponse(Constants.CourseNotFound);
 
-            // Only update fields that are provided
-            if (updateDto.CourseName != null)
-                existingCourse.CourseName = updateDto.CourseName;
+            course.CourseName = updateDto.CourseName ?? course.CourseName;
+            course.CourseCode = updateDto.CourseCode ?? course.CourseCode;
+            course.CourseRating = updateDto.CourseRating ?? course.CourseRating;
 
-            if (updateDto.CourseCode != null)
-                existingCourse.CourseCode = updateDto.CourseCode;
-
-            if (updateDto.CourseRating.HasValue)
-                existingCourse.CourseRating = updateDto.CourseRating.Value;
-
-            _courseService.UpdateCourse(existingCourse);
+            _courseService.UpdateCourse(course);
             _courseService.SaveChanges();
 
             return SuccessMessage(Constants.CourseUpdated);
         }
 
-
         [HttpDelete("{id}")]
         [Authorize(Policy = "AdminOnly")]
         public ActionResult<ApiResponse<object>> DeleteCourses(int id)
         {
-            var courseDetails = _courseService.GetCourseById(id);
-            if (courseDetails == null)
+            var course = _courseService.GetCourseById(id);
+            if (course == null)
                 return NotFoundResponse(Constants.CourseNotFound);
 
-            _courseService.DeleteCourse(courseDetails);
+            _courseService.DeleteCourse(course);
             _courseService.SaveChanges();
 
             return SuccessMessage(Constants.CourseDeleted);

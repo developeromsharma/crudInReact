@@ -5,7 +5,7 @@ using crudInReact.Server.Models;
 using crudInReact.Server.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace crudInReact.Server.Controllers
 {
@@ -42,7 +42,7 @@ namespace crudInReact.Server.Controllers
                 return ErrorMessage(ex.Message);
             }
         }
-       
+
         [HttpDelete("unassign")]
         [Authorize(Policy = "AdminOnly")]
         public ActionResult<ApiResponse<object>> UnassignCourseFromUser([FromQuery] int userId, [FromQuery] int courseId)
@@ -59,46 +59,30 @@ namespace crudInReact.Server.Controllers
             return SuccessMessage(Constants.CourseUnassignedFromUserSuccessfully);
         }
 
-
         [HttpGet("my-courses")]
         public ActionResult<ApiResponse<IEnumerable<CourseModel>>> GetCoursesForUser(
-    [FromQuery] int? userId = null,
-    [FromQuery] string userName = null)
+            [FromQuery] int? userId = null,
+            [FromQuery] string userName = null)
         {
-            // Get the current user's ID and IsAdmin flag from JWT claims
-            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "userId");
-            var isAdminClaim = User.Claims.FirstOrDefault(c => c.Type == "isAdmin");
+            var userIdClaim = User.FindFirst("userId")?.Value;
+            var isAdminClaim = User.FindFirst("isAdmin")?.Value;
 
-            if (userIdClaim == null || isAdminClaim == null)
+            if (string.IsNullOrEmpty(userIdClaim) || string.IsNullOrEmpty(isAdminClaim))
                 return Unauthorized("Invalid user claims.");
 
-            var currentUserId = int.Parse(userIdClaim.Value);
-            var isAdmin = bool.Parse(isAdminClaim.Value);
+            var currentUserId = int.Parse(userIdClaim);
+            var isAdmin = bool.Parse(isAdminClaim);
 
-            // If the user is not an admin but trying to fetch someone else's courses
-            if (!isAdmin && (userId != null || !string.IsNullOrEmpty(userName)))
-            {
+            if (!isAdmin && (userId.HasValue || !string.IsNullOrWhiteSpace(userName)))
                 return Unauthorized(Constants.YouAreNotAuthorizedToViewOtherUsersCourses);
-            }
 
-            // Admin user can query by userId or userName
-            if (userId != null)
-            {
-                var courses = _courseService.GetCoursesForUser(userId.Value);
-                return SuccessResponse(courses, Constants.CoursesRetrievedForCurrentUser);
-            }
+            if (userId.HasValue)
+                return SuccessResponse(_courseService.GetCoursesForUser(userId.Value), Constants.CoursesRetrievedForCurrentUser);
 
-            if (!string.IsNullOrEmpty(userName))
-            {
-                var coursesByName = _courseService.GetCoursesForUser(userName);
-                return SuccessResponse(coursesByName, Constants.CoursesRetrievedForCurrentUser);
-            }
+            if (!string.IsNullOrWhiteSpace(userName))
+                return SuccessResponse(_courseService.GetCoursesForUser(userName), Constants.CoursesRetrievedForCurrentUser);
 
-            // Non-admin or fallback to current user's courses
-            var userCourses = _courseService.GetCoursesForUser(currentUserId);
-            return SuccessResponse(userCourses, Constants.CoursesRetrievedForCurrentUser);
+            return SuccessResponse(_courseService.GetCoursesForUser(currentUserId), Constants.CoursesRetrievedForCurrentUser);
         }
-
-
     }
 }

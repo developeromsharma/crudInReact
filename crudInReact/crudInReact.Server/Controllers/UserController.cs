@@ -29,12 +29,10 @@ namespace crudInReact.Server.Controllers
                 return BadRequest("Login data is null.");
 
             var user = await _userService.AuthenticateAsync(loginDto.Username, loginDto.Password);
-
             if (user == null)
                 return Unauthorized("Invalid username or password.");
 
             var token = _jwtService.GenerateToken(user);
-
             return Ok(new { Token = token, IsAdmin = user.IsAdmin });
         }
 
