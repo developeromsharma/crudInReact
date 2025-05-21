@@ -5,8 +5,9 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
 using crudInReact.Server.DTO;
+using crudInReact.Server.Services.IService;
 
-namespace crudInReact.Server.Services
+namespace crudInReact.Server.Services.Service
 {
     public class UserService : IUserService
     {

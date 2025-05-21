@@ -2,10 +2,9 @@
 using crudInReact.Server.DTO;
 using crudInReact.Server.Helper;
 using crudInReact.Server.Models;
-using crudInReact.Server.Services;
+using crudInReact.Server.Services.IService;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace crudInReact.Server.Controllers
 {
@@ -13,13 +12,15 @@ namespace crudInReact.Server.Controllers
     [Authorize]
     public class AssignmentController : BaseController
     {
-        private readonly ICourseServices _courseService;
+        private readonly IAssignmentService _assignmentService;
+        private readonly ICourseServices _courseServices;
         private readonly IMapper _mapper;
         private readonly IUserService _userService;
 
-        public AssignmentController(ICourseServices courseService, IMapper mapper, IUserService userService)
+        public AssignmentController(IAssignmentService assignmentService,ICourseServices courseServices, IMapper mapper, IUserService userService)
         {
-            _courseService = courseService;
+            _assignmentService = assignmentService;
+            _courseServices = courseServices;
             _mapper = mapper;
             _userService = userService;
         }
@@ -33,8 +34,8 @@ namespace crudInReact.Server.Controllers
 
             try
             {
-                _courseService.AssignCourseToUser(dto.UserId, dto.CourseId);
-                _courseService.SaveChanges();
+                _assignmentService.AssignCourseToUser(dto.UserId, dto.CourseId);
+                _courseServices.SaveChanges();
                 return SuccessMessage(Constants.CourseAssignedToUserSuccessfully);
             }
             catch (InvalidOperationException ex)
@@ -48,13 +49,13 @@ namespace crudInReact.Server.Controllers
         public ActionResult<ApiResponse<object>> UnassignCourseFromUser([FromQuery] int userId, [FromQuery] int courseId)
         {
             var user = _userService.GetUserById(userId);
-            var course = _courseService.GetCourseById(courseId);
+            var course = _courseServices.GetCourseById(courseId);
 
             if (user == null || course == null)
                 return NotFoundResponse(Constants.UserNotFound);
 
-            _courseService.UnassignCourseFromUser(userId, courseId);
-            _courseService.SaveChanges();
+            _assignmentService.UnassignCourseFromUser(userId, courseId);
+            _courseServices.SaveChanges();
 
             return SuccessMessage(Constants.CourseUnassignedFromUserSuccessfully);
         }
@@ -77,12 +78,12 @@ namespace crudInReact.Server.Controllers
                 return Unauthorized(Constants.YouAreNotAuthorizedToViewOtherUsersCourses);
 
             if (userId.HasValue)
-                return SuccessResponse(_courseService.GetCoursesForUser(userId.Value), Constants.CoursesRetrievedForCurrentUser);
+                return SuccessResponse(_assignmentService.GetCoursesForUser(userId.Value), Constants.CoursesRetrievedForCurrentUser);
 
             if (!string.IsNullOrWhiteSpace(userName))
-                return SuccessResponse(_courseService.GetCoursesForUser(userName), Constants.CoursesRetrievedForCurrentUser);
+                return SuccessResponse(_assignmentService.GetCoursesForUser(userName), Constants.CoursesRetrievedForCurrentUser);
 
-            return SuccessResponse(_courseService.GetCoursesForUser(currentUserId), Constants.CoursesRetrievedForCurrentUser);
+            return SuccessResponse(_assignmentService.GetCoursesForUser(currentUserId), Constants.CoursesRetrievedForCurrentUser);
         }
     }
 }

@@ -2,7 +2,7 @@
 using crudInReact.Server.DTO;
 using crudInReact.Server.Helper;
 using crudInReact.Server.Models;
-using crudInReact.Server.Services;
+using crudInReact.Server.Services.IService;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
