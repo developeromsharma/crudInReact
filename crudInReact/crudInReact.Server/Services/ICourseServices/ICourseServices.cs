@@ -10,5 +10,9 @@ namespace crudInReact.Server.Services
         void AddCourse(CourseModel newCourse);
         void UpdateCourse(CourseModel newCourse);
         void DeleteCourse(CourseModel newCourse);
+        void AssignCourseToUser(int userId, int courseId);
+        IEnumerable<CourseModel> GetCoursesForUser(int userId);
+        IEnumerable<CourseModel> GetCoursesForUser(string userName);
+        void UnassignCourseFromUser(int userId, int courseId);
     }
 }

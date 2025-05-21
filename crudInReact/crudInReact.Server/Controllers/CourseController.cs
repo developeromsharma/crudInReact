@@ -14,11 +14,13 @@ namespace crudInReact.Server.Controllers
     {
         private readonly ICourseServices _courseService;
         private readonly IMapper _mapper;
+        private readonly IUserService _userService;
 
-        public CourseController(ICourseServices courseService, IMapper mapper)
+        public CourseController(ICourseServices courseService, IMapper mapper, IUserService userService)
         {
             _courseService = courseService;
             _mapper = mapper;
+            _userService = userService;
         }
 
         [HttpGet("GetAll")]

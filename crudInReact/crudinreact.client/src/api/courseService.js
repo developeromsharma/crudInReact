@@ -30,6 +30,7 @@ export const createCourse = async (course) => {
     return await axiosInstance.post('', course); // full Axios response
 };
 
+// UPDATE (PATCH) a course
 export const updateCourse = async (id, partialCourseData) => {
     try {
         const response = await axiosInstance.patch(`/${id}`, partialCourseData);
@@ -39,7 +40,6 @@ export const updateCourse = async (id, partialCourseData) => {
         throw error;
     }
 };
-
 
 // DELETE a course
 export const deleteCourse = async (id) => {

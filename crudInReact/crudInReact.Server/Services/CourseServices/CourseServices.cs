@@ -1,5 +1,6 @@
 ﻿using crudInReact.Server.DataServices;
 using crudInReact.Server.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace crudInReact.Server.Services
 {
@@ -63,10 +64,61 @@ namespace crudInReact.Server.Services
             existingCourse.CourseName = updatedCourse.CourseName;
             existingCourse.CourseCode = updatedCourse.CourseCode;
             existingCourse.CourseRating = updatedCourse.CourseRating;
-
-
         }
 
+        public void AssignCourseToUser(int userId, int courseId)
+        {
+            var user = _courseContext.Users.FirstOrDefault(u => u.Id == userId);
+            var course = _courseContext.Courses.FirstOrDefault(c => c.CourseId == courseId);
+
+            if (user == null || course == null)
+                throw new InvalidOperationException("User or Course not found.");
+
+            var alreadyAssigned = _courseContext.UserCoursesModel
+                .Any(uc => uc.UserId == userId && uc.CourseId == courseId);
+
+            if (alreadyAssigned)
+                throw new InvalidOperationException("Course is already assigned to this user.");
+
+            var assignment = new UserCourseModel
+            {
+                UserId = userId,
+                CourseId = courseId
+            };
+
+            _courseContext.UserCoursesModel.Add(assignment);
+        }
+        public IEnumerable<CourseModel> GetCoursesForUser(int userId)
+        {
+            var courseIds = _courseContext.UserCoursesModel
+                .Where(uc => uc.UserId == userId)
+                .Select(uc => uc.CourseId)
+            .ToList();
+
+            return _courseContext.Courses
+                .Where(course => courseIds.Contains(course.CourseId))
+                .ToList();
+        }
+
+        public IEnumerable<CourseModel> GetCoursesForUser(string userName)
+        {
+            var user = _courseContext.Users.FirstOrDefault(u => u.Username == userName);
+            if (user == null) return new List<CourseModel>();
+
+            return GetCoursesForUser(user.Id);
+        }
+
+
+        public void UnassignCourseFromUser(int userId, int courseId)
+        {
+            var userCourse = _courseContext.UserCoursesModel
+                .FirstOrDefault(uc => uc.UserId == userId && uc.CourseId == courseId);
+
+            if (userCourse != null)
+            {
+                _courseContext.UserCoursesModel.Remove(userCourse);
+            }
+        }
     }
 }
 

@@ -17,5 +17,8 @@ namespace crudInReact.Server.Models
 
         [Required]
         public double CourseRating { get; set; }
+
+        // Navigation property for assigned users
+        public ICollection<UserCourseModel> UserCoursesModel { get; set; }
     }
 }
