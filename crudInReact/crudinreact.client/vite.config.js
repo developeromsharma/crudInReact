@@ -72,6 +72,6 @@ export default defineConfig({
     test: {
         globals: true,
         environment: 'jsdom',
-        setupFiles: './src/setupTests.js', // Optional if you want to set up DOM matchers
+        setupFiles: './src/setupTests.js', 
     },
 });
