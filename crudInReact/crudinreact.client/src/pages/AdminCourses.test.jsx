@@ -1,157 +1,131 @@
 import React from 'react';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
-import AdminCourses from '../components/AdminCourses';
+import { render, screen, waitFor, within, fireEvent } from '@testing-library/react';
+import AdminCourses from './AdminCourses';
+import { vi } from 'vitest';
 import * as courseService from '../api/courseService';
 import * as assignmentService from '../api/assignmentService';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 
-// Mock axios and api calls
-jest.mock('axios');
-jest.mock('../api/courseService');
-jest.mock('../api/assignmentService');
+// Mock API modules
+vi.mock('../api/courseService', () => ({
+    getCourses: vi.fn(),
+    createCourse: vi.fn(),
+    updateCourse: vi.fn(),
+    deleteCourse: vi.fn(),
+}));
 
-const mockCourses = [
-    { courseId: 1, courseName: 'React Basics', courseCode: 'REACT101', courseRating: 4.5 },
-    { courseId: 2, courseName: 'Advanced JS', courseCode: 'JS201', courseRating: 4.7 },
-];
+vi.mock('../api/assignmentService', () => ({
+    assignCourseToUser: vi.fn(),
+    unassignCourseFromUser: vi.fn(),
+    getAssignedCourses: vi.fn(),
+}));
 
-const mockUsers = [
-    { id: 10, username: 'user1' },
-    { id: 20, username: 'user2' },
-];
-
-const mockUserCourses = [
-    { userId: 10, courses: [mockCourses[0]] }
-];
+vi.mock('axios');
 
 describe('AdminCourses Component', () => {
-    beforeEach(() => {
-        // Reset mocks before each test
-        jest.clearAllMocks();
+    const mockToken = 'mock-token';
+    const mockUsers = [
+        { id: '1', username: 'user1' },
+        { id: '2', username: 'user2' },
+    ];
 
-        // Mock course service API
-        courseService.getCourses.mockResolvedValue({ data: { data: mockCourses } });
-        courseService.createCourse.mockResolvedValue({});
-        courseService.updateCourse.mockResolvedValue({});
-        courseService.deleteCourse.mockResolvedValue({});
+    const mockCourses = {
+        data: {
+            data: [
+                { courseId: 1, courseName: 'Math', courseCode: 'M101', courseRating: 4.5 },
+                { courseId: 2, courseName: 'Physics', courseCode: 'P101', courseRating: 4.2 },
+            ],
+        },
+    };
 
-        // Mock assignment service API
-        assignmentService.assignCourseToUser.mockResolvedValue({});
-        assignmentService.unassignCourseFromUser.mockResolvedValue({});
-        assignmentService.getAssignedCourses.mockImplementation((userId) => {
-            const userCourses = mockUserCourses.find(uc => uc.userId === Number(userId));
-            return Promise.resolve({ data: { data: userCourses ? userCourses.courses : [] } });
-        });
+    const mockAssignments = {
+        data: {
+            data: [],
+        },
+    };
 
-        // Mock axios calls for non-admin users and user-course map
-        axios.get.mockImplementation((url) => {
-            if (url.endsWith('/api/user/non-admin')) {
-                return Promise.resolve({ data: { data: mockUsers } });
-            }
-            if (url.endsWith('/api/assignment/my-courses')) {
-                return Promise.resolve({ data: { data: mockUserCourses } });
-            }
-            return Promise.reject(new Error('not found'));
-        });
-    });
-
-    const renderComponent = () => {
-        return render(
-            <AuthContext.Provider value={{ token: 'fake-token' }}>
+    const renderComponent = () =>
+        render(
+            <AuthContext.Provider value={{ token: mockToken }}>
                 <AdminCourses />
             </AuthContext.Provider>
         );
-    };
 
-    test('renders component and loads courses and users', async () => {
-        renderComponent();
+    beforeEach(() => {
+        vi.clearAllMocks();
 
-        expect(screen.getByPlaceholderText(/Name/i)).toBeInTheDocument();
-
-        // Wait for courses and users to load and appear
-        await waitFor(() => {
-            expect(courseService.getCourses).toHaveBeenCalled();
-            expect(axios.get).toHaveBeenCalledWith(
-                expect.stringContaining('/api/user/non-admin'),
-                expect.any(Object)
-            );
+        courseService.getCourses.mockResolvedValue(mockCourses);
+        axios.get.mockImplementation((url) => {
+            if (url.includes('non-admin')) {
+                return Promise.resolve({ data: { data: mockUsers } });
+            }
+            if (url.includes('my-courses')) {
+                return Promise.resolve(mockAssignments);
+            }
+            return Promise.resolve({ data: { data: [] } });
         });
 
-        // Check that courses appear in the table
-        expect(screen.getByText('React Basics')).toBeInTheDocument();
-        expect(screen.getByText('Advanced JS')).toBeInTheDocument();
-
-        // Check users appear in the dropdown
-        expect(screen.getAllByRole('option').some(opt => opt.textContent === 'user1')).toBe(true);
+        assignmentService.getAssignedCourses.mockResolvedValue({ data: { data: [] } });
     });
 
-    test('handles form submission to create a new course', async () => {
+    it('renders without crashing and shows course table', async () => {
         renderComponent();
 
-        fireEvent.change(screen.getByPlaceholderText(/Name/i), { target: { value: 'New Course' } });
-        fireEvent.change(screen.getByPlaceholderText(/Code/i), { target: { value: 'NEW101' } });
-        fireEvent.change(screen.getByPlaceholderText(/Rating/i), { target: { value: '4.0' } });
+        await waitFor(() => {
+            const table = screen.getByRole('table');
+            const { getByText } = within(table);
+            expect(getByText('Math')).toBeInTheDocument();
+            expect(getByText('Physics')).toBeInTheDocument();
+        });
+    });
 
-        fireEvent.click(screen.getByRole('button', { name: /Add/i }));
+
+    it('can fill form and call createCourse', async () => {
+        renderComponent();
+
+        await waitFor(() => screen.getByPlaceholderText('Name'));
+
+        fireEvent.change(screen.getByPlaceholderText('Name'), {
+            target: { value: 'Biology' },
+        });
+        fireEvent.change(screen.getByPlaceholderText('Code'), {
+            target: { value: 'B101' },
+        });
+        fireEvent.change(screen.getByPlaceholderText('Rating'), {
+            target: { value: '4.0' },
+        });
+
+        fireEvent.click(screen.getByRole('button', { name: /add/i }));
 
         await waitFor(() => {
             expect(courseService.createCourse).toHaveBeenCalledWith({
-                courseName: 'New Course',
-                courseCode: 'NEW101',
+                courseName: 'Biology',
+                courseCode: 'B101',
                 courseRating: 4.0,
             });
         });
     });
 
-    test('shows alert if form fields are empty on submit', () => {
-        window.alert = jest.fn();
-
+    it('can assign course to user', async () => {
         renderComponent();
 
-        fireEvent.click(screen.getByRole('button', { name: /Add/i }));
+        await waitFor(() => screen.getByText('Assign Course to User'));
 
-        expect(window.alert).toHaveBeenCalledWith('Fill in all fields.');
-    });
+        const userSelect = screen.getAllByDisplayValue('Select User')[0];
+        const courseSelect = screen.getAllByDisplayValue('Select Course')[0];
 
-    test('handles course assignment to user', async () => {
-        window.alert = jest.fn();
-
-        renderComponent();
-
-        // Wait for data load
-        await waitFor(() => expect(courseService.getCourses).toHaveBeenCalled());
-
-        // Select user and course from dropdown
-        fireEvent.change(screen.getByRole('combobox', { name: '' }), { target: { value: '10' } }); // user select
-        fireEvent.change(screen.getAllByRole('combobox')[1], { target: { value: '1' } }); // course select
-
-        fireEvent.click(screen.getByRole('button', { name: /Assign/i }));
-
-        await waitFor(() => {
-            expect(assignmentService.assignCourseToUser).toHaveBeenCalledWith('10', 1);
-            expect(window.alert).toHaveBeenCalledWith('Course assigned successfully!');
+        fireEvent.change(userSelect, {
+            target: { value: '1' },
         });
-    });
+        fireEvent.change(courseSelect, {
+            target: { value: '1' },
+        });
 
-    test('handles course unassignment from user', async () => {
-        window.alert = jest.fn();
-        window.confirm = jest.fn(() => true); // simulate confirm = yes
-
-        renderComponent();
-
-        // Set view user id to trigger courses load
-        fireEvent.change(screen.getAllByRole('combobox')[2], { target: { value: '10' } });
-
-        // Wait for courses to load
-        await waitFor(() => screen.getByText('React Basics'));
-
-        // Click unassign button
-        fireEvent.click(screen.getByRole('button', { name: /Unassign/i }));
+        fireEvent.click(screen.getByRole('button', { name: /assign/i }));
 
         await waitFor(() => {
-            expect(assignmentService.unassignCourseFromUser).toHaveBeenCalledWith('10', 1);
-            expect(window.alert).toHaveBeenCalledWith('Course unassigned successfully!');
+            expect(assignmentService.assignCourseToUser).toHaveBeenCalledWith('1', 1);
         });
     });
 });

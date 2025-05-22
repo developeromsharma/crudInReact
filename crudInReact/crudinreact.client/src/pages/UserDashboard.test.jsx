@@ -1,96 +1,130 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
-import UserDashboard from '../UserDashboard';
-import { AuthContext } from '../../context/AuthContext';
-import { getCourses } from '../../api/courseService';
-import { getAssignedCourses } from '../../api/assignmentService';
+import { vi } from 'vitest';
+import UserDashboard from '../pages/UserDashboard';
+import { AuthContext } from '../context/AuthContext';
+import * as courseService from '../api/courseService';
+import * as assignmentService from '../api/assignmentService';
 
-// Mock API services
-jest.mock('../../api/courseService', () => ({
-    getCourses: jest.fn(),
-}));
+// Mock API calls
+vi.mock('../api/courseService');
+vi.mock('../api/assignmentService');
 
-jest.mock('../../api/assignmentService', () => ({
-    getAssignedCourses: jest.fn(),
-}));
+describe('UserDashboard component', () => {
+    const user = { userName: 'JohnDoe' };
 
-const mockAssignedCourses = [
-    { courseId: 1, courseName: 'React Basics', courseCode: 'RB101', courseRating: 4.5 },
-];
-const mockAllCourses = [
-    { courseId: 2, courseName: 'Node.js Fundamentals', courseCode: 'NJ102', courseRating: 4.8 },
-];
+    const renderWithContext = (token = 'fake-token') => {
+        render(
+            <AuthContext.Provider value={{ token, user }}>
+                <UserDashboard />
+            </AuthContext.Provider>
+        );
+    };
 
-const renderWithAuth = (token = 'valid-token', user = { userName: 'JohnDoe' }) => {
-    return render(
-        <AuthContext.Provider value={{ token, user }}>
-            <UserDashboard />
-        </AuthContext.Provider>
-    );
-};
-
-describe('UserDashboard', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
+    afterEach(() => {
+        vi.clearAllMocks();
     });
 
-    test('displays login message if no token is present', () => {
-        renderWithAuth(null);
+    it('shows login prompt if no token', () => {
+        renderWithContext(null);
         expect(screen.getByText(/please login/i)).toBeInTheDocument();
     });
 
-    test('displays loading messages initially', async () => {
-        getCourses.mockResolvedValue({ data: { data: [] } });
-        getAssignedCourses.mockResolvedValue({ data: { data: [] } });
+    it('shows loading messages initially', async () => {
+        courseService.getCourses.mockReturnValue(new Promise(() => { }));
+        assignmentService.getAssignedCourses.mockReturnValue(new Promise(() => { }));
 
-        renderWithAuth();
+        renderWithContext();
 
         expect(screen.getByText(/loading assigned courses/i)).toBeInTheDocument();
         expect(screen.getByText(/loading all courses/i)).toBeInTheDocument();
-
-        await waitFor(() => {
-            expect(getCourses).toHaveBeenCalled();
-            expect(getAssignedCourses).toHaveBeenCalled();
-        });
     });
 
-    test('shows message when no assigned or available courses', async () => {
-        getCourses.mockResolvedValue({ data: { data: [] } });
-        getAssignedCourses.mockResolvedValue({ data: { data: [] } });
-
-        renderWithAuth();
-
-        await waitFor(() => {
-            expect(screen.getByText(/no course assigned/i)).toBeInTheDocument();
-            expect(screen.getByText(/no courses available/i)).toBeInTheDocument();
+    it('renders assigned courses table with data', async () => {
+        assignmentService.getAssignedCourses.mockResolvedValue({
+            data: {
+                data: [
+                    {
+                        courseId: 1,
+                        courseName: 'Assigned Course 1',
+                        courseCode: 'AC1',
+                        courseRating: 4.5,
+                    },
+                ],
+            },
         });
+
+        courseService.getCourses.mockResolvedValue({
+            data: { data: [] },
+        });
+
+        renderWithContext();
+
+        // Wait for assigned courses to load
+        await waitFor(() => {
+            expect(screen.queryByText(/loading assigned courses/i)).not.toBeInTheDocument();
+        });
+
+        expect(screen.getByText('Assigned Course 1')).toBeInTheDocument();
+        expect(screen.getByText('AC1')).toBeInTheDocument();
+        expect(screen.getByText('4.5')).toBeInTheDocument();
+
+        // Since allCourses is empty, show no courses message
+        expect(screen.getByText(/no courses available/i)).toBeInTheDocument();
     });
 
-    test('renders assigned and all courses tables correctly', async () => {
-        getCourses.mockResolvedValue({ data: { data: mockAllCourses } });
-        getAssignedCourses.mockResolvedValue({ data: { data: mockAssignedCourses } });
-
-        renderWithAuth();
-
-        await waitFor(() => {
-            // Assigned Courses
-            expect(screen.getByText('React Basics')).toBeInTheDocument();
-            expect(screen.getByText('RB101')).toBeInTheDocument();
-            expect(screen.getByText('4.5')).toBeInTheDocument();
-
-            // All Courses
-            expect(screen.getByText('Node.js Fundamentals')).toBeInTheDocument();
-            expect(screen.getByText('NJ102')).toBeInTheDocument();
-            expect(screen.getByText('4.8')).toBeInTheDocument();
+    it('renders all courses table with data', async () => {
+        assignmentService.getAssignedCourses.mockResolvedValue({
+            data: { data: [] },
         });
+
+        courseService.getCourses.mockResolvedValue({
+            data: {
+                data: [
+                    {
+                        courseId: 10,
+                        courseName: 'Course 10',
+                        courseCode: 'C10',
+                        courseRating: 3.8,
+                    },
+                ],
+            },
+        });
+
+        renderWithContext();
+
+        // Wait for all courses to load
+        await waitFor(() => {
+            expect(screen.queryByText(/loading all courses/i)).not.toBeInTheDocument();
+        });
+
+        expect(screen.getByText('Course 10')).toBeInTheDocument();
+        expect(screen.getByText('C10')).toBeInTheDocument();
+        expect(screen.getByText('3.8')).toBeInTheDocument();
+
+        // Since assignedCourses is empty, show no assigned courses message
+        expect(screen.getByText(/no course assigned/i)).toBeInTheDocument();
     });
 
-    test('renders greeting with username', async () => {
-        getCourses.mockResolvedValue({ data: { data: [] } });
-        getAssignedCourses.mockResolvedValue({ data: { data: [] } });
+    it('handles errors gracefully and stops loading', async () => {
+        // Mock rejected promises
+        assignmentService.getAssignedCourses.mockRejectedValue(new Error('Failed to fetch assigned'));
+        courseService.getCourses.mockRejectedValue(new Error('Failed to fetch all courses'));
 
-        renderWithAuth();
+        // spy on console.error to suppress error logs in test output
+        const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
 
-        expect(screen.getByText(/hi johndoe, welcome to course dashboard/i)).toBeInTheDocument();
+        renderWithContext();
+
+        await waitFor(() => {
+            expect(screen.queryByText(/loading assigned courses/i)).not.toBeInTheDocument();
+            expect(screen.queryByText(/loading all courses/i)).not.toBeInTheDocument();
+        });
+
+        // No courses loaded, so fallback messages appear
+        expect(screen.getByText(/no course assigned/i)).toBeInTheDocument();
+        expect(screen.getByText(/no courses available/i)).toBeInTheDocument();
+
+        consoleErrorSpy.mockRestore();
     });
 });

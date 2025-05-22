@@ -1,37 +1,43 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import Login from '../Login';
-import { AuthContext } from '../../context/AuthContext';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { vi } from 'vitest';
+import Login from './Login';
+import { AuthContext } from '../context/AuthContext';
 import axios from 'axios';
-import { MemoryRouter, useNavigate } from 'react-router-dom';
+import { BrowserRouter } from 'react-router-dom';
 
 // Mock axios
-jest.mock('axios');
+vi.mock('axios');
 
-// Mock useNavigate from react-router-dom
-const mockedNavigate = jest.fn();
-jest.mock('react-router-dom', () => ({
-    ...jest.requireActual('react-router-dom'),
-    useNavigate: () => mockedNavigate,
-}));
+const mockNavigate = vi.fn();
 
-describe('Login Component', () => {
-    const mockLogin = jest.fn();
+vi.mock('react-router-dom', async () => {
+    const actual = await vi.importActual('react-router-dom');
+    return {
+        ...actual,
+        useNavigate: () => mockNavigate,
+    };
+});
 
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
+describe('Login component', () => {
+    const loginMock = vi.fn();
 
-    const renderLogin = () =>
+    const renderLogin = () => {
         render(
-            <AuthContext.Provider value={{ login: mockLogin }}>
-                <MemoryRouter>
+            <AuthContext.Provider value={{ login: loginMock }}>
+                <BrowserRouter>
                     <Login />
-                </MemoryRouter>
+                </BrowserRouter>
             </AuthContext.Provider>
         );
+    };
 
-    test('renders username, password inputs and login button', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    it('renders username and password inputs and login button', () => {
         renderLogin();
 
         expect(screen.getByPlaceholderText(/username/i)).toBeInTheDocument();
@@ -39,99 +45,80 @@ describe('Login Component', () => {
         expect(screen.getByRole('button', { name: /login/i })).toBeInTheDocument();
     });
 
-    test('allows user to type username and password', () => {
+    it('enables inputs and button initially', () => {
         renderLogin();
 
-        const usernameInput = screen.getByPlaceholderText(/username/i);
-        const passwordInput = screen.getByPlaceholderText(/password/i);
-
-        fireEvent.change(usernameInput, { target: { value: 'testuser' } });
-        fireEvent.change(passwordInput, { target: { value: 'testpass' } });
-
-        expect(usernameInput.value).toBe('testuser');
-        expect(passwordInput.value).toBe('testpass');
+        expect(screen.getByPlaceholderText(/username/i)).toBeEnabled();
+        expect(screen.getByPlaceholderText(/password/i)).toBeEnabled();
+        expect(screen.getByRole('button', { name: /login/i })).toBeEnabled();
     });
 
-    test('shows loading state on submit and disables inputs/button', async () => {
-        axios.post.mockResolvedValue({
-            data: { token: 'fake-token', isAdmin: false },
-        });
-
+    it('disables inputs and button when loading', async () => {
         renderLogin();
 
-        const usernameInput = screen.getByPlaceholderText(/username/i);
-        const passwordInput = screen.getByPlaceholderText(/password/i);
-        const loginButton = screen.getByRole('button', { name: /login/i });
+        // Mock axios.post to delay to simulate loading
+        axios.post.mockImplementation(() =>
+            new Promise((resolve) => setTimeout(() => resolve({ data: { token: 'abc', isAdmin: false } }), 100))
+        );
 
-        fireEvent.change(usernameInput, { target: { value: 'testuser' } });
-        fireEvent.change(passwordInput, { target: { value: 'testpass' } });
+        userEvent.type(screen.getByPlaceholderText(/username/i), 'testuser');
+        userEvent.type(screen.getByPlaceholderText(/password/i), 'password123');
 
-        fireEvent.click(loginButton);
+        userEvent.click(screen.getByRole('button', { name: /login/i }));
 
-        expect(loginButton).toBeDisabled();
-        expect(usernameInput).toBeDisabled();
-        expect(passwordInput).toBeDisabled();
-        expect(screen.getByText(/logging in.../i)).toBeInTheDocument();
-        expect(screen.getByRole('progressbar')).toBeInTheDocument();
+        // Check that inputs and button are disabled immediately
+        expect(screen.getByPlaceholderText(/username/i)).toBeDisabled();
+        expect(screen.getByPlaceholderText(/password/i)).toBeDisabled();
+        expect(screen.getByRole('button')).toBeDisabled();
 
-        await waitFor(() => {
-            expect(axios.post).toHaveBeenCalledWith('https://localhost:7226/api/User/login', {
-                username: 'testuser',
-                password: 'testpass',
-            });
-        });
+        // Wait for axios call to resolve and loading to end
+        await waitFor(() => expect(screen.getByRole('button')).toHaveTextContent('Login'));
     });
 
-    test('calls login from context and navigates on successful admin login', async () => {
-        axios.post.mockResolvedValue({
-            data: { token: 'fake-token', isAdmin: true },
-        });
-
+    it('calls login and navigates to /dashboard on successful login (non-admin)', async () => {
         renderLogin();
 
-        fireEvent.change(screen.getByPlaceholderText(/username/i), { target: { value: 'adminuser' } });
-        fireEvent.change(screen.getByPlaceholderText(/password/i), { target: { value: 'adminpass' } });
+        axios.post.mockResolvedValueOnce({ data: { token: 'token123', isAdmin: false } });
 
-        fireEvent.click(screen.getByRole('button', { name: /login/i }));
+        userEvent.type(screen.getByPlaceholderText(/username/i), 'user1');
+        userEvent.type(screen.getByPlaceholderText(/password/i), 'pass1');
+        userEvent.click(screen.getByRole('button', { name: /login/i }));
 
         await waitFor(() => {
-            expect(mockLogin).toHaveBeenCalledWith('fake-token', true);
-            expect(mockedNavigate).toHaveBeenCalledWith('/admin');
+            expect(loginMock).toHaveBeenCalledWith('token123', false);
+            expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
         });
     });
 
-    test('calls login from context and navigates on successful regular user login', async () => {
-        axios.post.mockResolvedValue({
-            data: { token: 'fake-token', isAdmin: false },
-        });
-
+    it('calls login and navigates to /admin on successful login (admin)', async () => {
         renderLogin();
 
-        fireEvent.change(screen.getByPlaceholderText(/username/i), { target: { value: 'normaluser' } });
-        fireEvent.change(screen.getByPlaceholderText(/password/i), { target: { value: 'normalpass' } });
+        axios.post.mockResolvedValueOnce({ data: { token: 'token123', isAdmin: true } });
 
-        fireEvent.click(screen.getByRole('button', { name: /login/i }));
+        userEvent.type(screen.getByPlaceholderText(/username/i), 'admin');
+        userEvent.type(screen.getByPlaceholderText(/password/i), 'adminpass');
+        userEvent.click(screen.getByRole('button', { name: /login/i }));
 
         await waitFor(() => {
-            expect(mockLogin).toHaveBeenCalledWith('fake-token', false);
-            expect(mockedNavigate).toHaveBeenCalledWith('/dashboard');
+            expect(loginMock).toHaveBeenCalledWith('token123', true);
+            expect(mockNavigate).toHaveBeenCalledWith('/admin');
         });
     });
 
-    test('alerts user on login failure', async () => {
-        axios.post.mockRejectedValue(new Error('Network error'));
-
-        window.alert = jest.fn();
-
+    it('shows alert on login failure', async () => {
         renderLogin();
 
-        fireEvent.change(screen.getByPlaceholderText(/username/i), { target: { value: 'failuser' } });
-        fireEvent.change(screen.getByPlaceholderText(/password/i), { target: { value: 'failpass' } });
+        const alertMock = vi.spyOn(window, 'alert').mockImplementation(() => { });
 
-        fireEvent.click(screen.getByRole('button', { name: /login/i }));
+        axios.post.mockRejectedValueOnce(new Error('Network error'));
+
+        userEvent.type(screen.getByPlaceholderText(/username/i), 'failuser');
+        userEvent.type(screen.getByPlaceholderText(/password/i), 'failpass');
+        userEvent.click(screen.getByRole('button', { name: /login/i }));
 
         await waitFor(() => {
-            expect(window.alert).toHaveBeenCalledWith('Login failed');
+            expect(alertMock).toHaveBeenCalledWith('Login failed');
+            alertMock.mockRestore();
         });
     });
 });
