@@ -6,6 +6,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import { AuthContext } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import { useContext } from 'react';
+import HeaderBanner from './components/HeaderBanner';
 
 function AppContent() {
     const location = useLocation();
@@ -15,12 +16,16 @@ function AppContent() {
 
     return (
         <>
+            {/* HeaderBanner is always shown */}
+            <HeaderBanner />
+
+            {/* Navbar is conditionally shown */}
             {!hideNavbar && <Navbar />}
+
             <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route path="/admin" element={<ProtectedRoute><AdminCourses /></ProtectedRoute>} />
                 <Route path="/dashboard" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
-                {/* Optional default route */}
                 <Route path="/" element={<ProtectedRoute>{isAdmin ? <AdminCourses /> : <UserDashboard />}</ProtectedRoute>} />
             </Routes>
         </>
