@@ -7,6 +7,7 @@ import { AuthContext } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import { useContext } from 'react';
 import HeaderBanner from './components/HeaderBanner';
+import Breadcrumbs from './components/Breadcrumbs';
 
 function AppContent() {
     const location = useLocation();
@@ -21,6 +22,7 @@ function AppContent() {
 
             {/* Navbar is conditionally shown */}
             {!hideNavbar && <Navbar />}
+            {!hideNavbar && <Breadcrumbs />} 
 
             <Routes>
                 <Route path="/login" element={<Login />} />
